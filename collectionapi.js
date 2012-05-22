@@ -1,13 +1,17 @@
-// TODO: allow options to be passed
-function CollectionAPI() {
+function CollectionAPI(options) {
 
   var self = this;
 
-  // TODO: check this instead of using eval
-  self._collections = {}
-  self.sslEnabled   = false;
-  self.listenPort   = 3005;
-  self.listenHost   = undefined; // undefined == all hosts
+  self._url = __meteor_bootstrap__.require('url');
+  self._collections = {};
+  self.options = {
+    sslEnabled: false,
+    listenPort: 3005,
+    listenHost: undefined,
+    privateKeyFile: 'privatekey.pem',
+    certificateFile: 'certificate.pem'
+  };
+  _.extend(self.options, options || {});
 
   var http = __meteor_bootstrap__.require('http');
   var url = __meteor_bootstrap__.require('url');
