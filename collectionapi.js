@@ -94,7 +94,7 @@ function CollectionAPI(options) {
 
   self._getRequest = function() {
 
-    Fiber(function () {
+    Fiber(function() {
 
       try {
         // TODO: A better way to do this?
@@ -103,7 +103,7 @@ function CollectionAPI(options) {
             : self._requestCollection.find();
 
         var records = [];
-        collection_result.forEach(function (record) {
+        collection_result.forEach(function(record) {
           records.push(record);
         });
 
