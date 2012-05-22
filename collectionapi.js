@@ -13,22 +13,41 @@ function CollectionAPI(options) {
   };
   _.extend(self.options, options || {});
 
-  var http = __meteor_bootstrap__.require('http');
-  var url = __meteor_bootstrap__.require('url');
+  self.addCollection = function() {
 
-  if (self.sslEnabled) {
-    // TODO: finish adding in SSL support
-    var crypto = __meteor_bootstrap__.require('crypto');
+  };
+
+  self.start = function() {
+    var httpServer, httpOptions;
+
+    if (self.options.sslEnabled === true) {
+      httpServer = __meteor_bootstrap__.require('https');
+      var fs = __meteor_bootstrap__.require('fs');
+
+      httpOptions = {
+        key: fs.readFileSync(self.options.privateKeyFile),
+        cert: fs.readFileSync(self.options.certificateFile)
+      };
+    } else {
+      httpServer = __meteor_bootstrap__.require('http');
+    }
+
+    self._server = httpServer.createServer(httpOptions);
+    self._server.addListener('request', function(request, response) { self._requestListener(request, response) });
+    self._server.listen(self.options.listenPort, self.options.listenHost);
+
+    var protocol = self.options.sslEnabled ? 'https://' : 'http://';
+    var host = self.options.listenHost || 'localhost';
+    console.log('Collection API running on ' +  protocol + host + ':' + self.options.listenPort);
   }
 
-  self.server = http.createServer(function (request, response) {
-
+  self._requestListener = function(request, response) {
     self._request = request;
     self._response = response;
 
     // [1] should be the collection path variable name
     // [2] is the _id of that collection (optional)
-    self._requestInfo = url.parse(self._request.url).pathname.split('/');
+    self._requestInfo = self._url.parse(self._request.url).pathname.split('/');
     
     // Make sure it looks like a variable name. I know this does not cover
     // ALL allowed variable names... but since I do an eval, I feel like
@@ -50,15 +69,7 @@ function CollectionAPI(options) {
     }
 
     return self._handleRequest();
-        
-  });
-
-  self.start = function() {
-    self.server.listen(this.listenPort, this.listenHost);
-    var protocol = self.sslEnabled ? 'https://' : 'http://';
-    var host = self.listenHost || 'localhost';
-    console.log('Collection API running on ' +  protocol + host + ':' + this.listenPort);
-  }
+  };
 
   self._handleRequest = function() {
 
