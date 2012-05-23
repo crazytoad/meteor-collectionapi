@@ -1,14 +1,28 @@
 Collection API
 ========
 
-Easily perform [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations over HTTP/HTTPS on Meteor Collections from outside of the Meteor client or server environment.
+Easily perform [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations on Meteor Collections over HTTP/HTTPS from outside of the Meteor client or server environment.
 
 
 Installation
 -------
 
-*coming soon*
+Since this isn't an official Meteor smart package, you'll need to copy the collectionapi directory into the Meteor packages directory. Here's the easiest way:
 
+
+Go to the Meteor packages directory (`/usr/lib/meteor/packages/` on Linux)
+
+    $ cd /usr/local/meteor/packages/
+
+Clone this neat repo:
+
+    $ git clone git://github.com/crazytoad/meteor-collectionapi.git collectionapi
+
+Go to your app directory and run:
+
+    $ meteor add collectionapi
+
+That's it!
 
 Quick Usage
 -------
