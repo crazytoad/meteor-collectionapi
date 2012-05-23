@@ -85,6 +85,8 @@ function CollectionAPI(options) {
     if (self.options.authToken) {
       return self._requestAuthToken === self.options.authToken;
     }
+
+    return true;
   }
 
   self._handleRequest = function() {
