@@ -1,178 +1,247 @@
-(function () {
+function CollectionAPI(options) {
+  var self = this;
 
-  var http = __meteor_bootstrap__.require('http');
-  var url = __meteor_bootstrap__.require('url');
+  self._url = __meteor_bootstrap__.require('url');
+  self._querystring = __meteor_bootstrap__.require('querystring');
+  self._collections = {};
+  self.options = {
+    sslEnabled: false,
+    listenPort: 3005,
+    listenHost: undefined,
+    authToken: undefined,
+    privateKeyFile: 'privatekey.pem',
+    certificateFile: 'certificate.pem'
+  };
+  _.extend(self.options, options || {});
 
-  http.createServer(function (req, res) {
+  self.addCollection = function(collection, path, options) {
+    collectionOptions = {}
+    collectionOptions[path] = {
+      collection: collection,
+      options: options || {}
+    };
+    _.extend(self._collections, collectionOptions);
+  };
 
-    // [1] should be the collection variable name
+  self.start = function() {
+    var httpServer, httpOptions, scheme;
+
+    if (self.options.sslEnabled === true) {
+      scheme = 'https://';
+      httpServer = __meteor_bootstrap__.require('https');
+      var fs = __meteor_bootstrap__.require('fs');
+
+      httpOptions = {
+        key: fs.readFileSync(self.options.privateKeyFile),
+        cert: fs.readFileSync(self.options.certificateFile)
+      };
+    } else {
+      scheme = 'http://';
+      httpServer = __meteor_bootstrap__.require('http');
+    }
+
+    self._server = httpServer.createServer(httpOptions);
+    self._server.addListener('request', function(request, response) { self._requestListener(request, response) });
+    self._server.listen(self.options.listenPort, self.options.listenHost);
+
+    console.log('Collection API running on ' +  scheme + (self.options.listenHost || 'localhost') + ':' + self.options.listenPort);
+  }
+
+  self._requestListener = function(request, response) {
+    self._request = request;
+    self._response = response;
+
+    self._requestUrl = self._url.parse(self._request.url);
+
+    // Check for the X-Auth-Token header or auth-token in the query string
+    self._requestAuthToken = self._request.headers['x-auth-token'] ? self._request.headers['x-auth-token'] : self._querystring.parse(self._requestUrl.query)['auth-token'];
+
+    // [1] should be the collection path name
     // [2] is the _id of that collection (optional)
-    var collection_info = url.parse(req.url).pathname.split('/');
+    self._requestPath = self._requestUrl.pathname.split('/');
     
-    // Make sure it looks like a variable name. I know this does not cover
-    // ALL allowed variable names... but since I do an eval, I feel like
-    // I have to check for at least something so it can be considered safe'ish.
-    if (! collection_info[1].match(/^[a-zA-Z_$][0-9a-zA-Z_$]*$/)) {
-      return notFoundResponse('Invalid Collection Name', req, res);
+    self._requestCollection = self._collections[self._requestPath[1]] ? self._collections[self._requestPath[1]].collection : undefined;
+
+    if (!self._authenticate()) {
+      return self._unauthorizedResponse('Invalid/Missing Auth Token');
     }
 
-    // eval() is icky, but I don't know how else to accomplish this.
-    try {
-      collection_info[1] = eval(collection_info[1]);
-    } catch (e) {
-      collection_info[1] = undefined;
+    if (!self._requestCollection) {
+      return self._notFoundResponse('Collection Object Not Found');
     }
 
-    // Do our best to ensure we have a Meteor.Collection object
-    if (collection_info[1] === undefined || typeof(collection_info[1]) !== 'object' || collection_info[1]._collection === undefined) {
-      return notFoundResponse('Collection Object Not Found', req, res);
+    return self._handleRequest();
+  };
+
+  self._authenticate = function() {
+    var collectionOptions = self._requestCollectionOptions();
+
+    // Check the collection's auth token
+    if (collectionOptions && collectionOptions.authToken) {
+      return self._requestAuthToken === collectionOptions.authToken;
     }
 
-    handleRequest(collection_info, req, res);
-        
-  }).listen(3005, '127.0.0.1');
+    // Check the global auth token
+    if (self.options.authToken) {
+      return self._requestAuthToken === self.options.authToken;
+    }
 
-  function handleRequest(collection_info, req, res) {
+    return true;
+  }
 
-    switch (req.method) {
+  self._handleRequest = function() {
+
+    if (!self._requestMethodAllowed(self._request.method)) {
+      return self._notSupportedResponse();
+    }
+
+    switch (self._request.method) {
       case 'GET':
-        getRequest(collection_info, req, res);
-        break;
+        return self._getRequest();
       case 'POST':
-        postRequest(collection_info, req, res);
-        break;
+        return self._postRequest();
       case 'PUT':
-        putRequest(collection_info, req, res);
-        break;
+        return self._putRequest();
       case 'DELETE':
-        deleteRequest(collection_info, req, res);
-        break;
+        return self._deleteRequest();
       default:
-        notSupportedResponse(req, res);
+        return self._notSupportedResponse();
     }
 
   }
 
-  function getRequest(collection_info, req, res) {
+  self._requestCollectionOptions = function() {
+    return self._collections[self._requestPath[1]] ? self._collections[self._requestPath[1]].options : undefined;
+  }
 
-    Fiber(function () {
+  self._requestMethodAllowed = function (method) {
+    var collectionOptions = self._requestCollectionOptions();
+
+    if (collectionOptions && collectionOptions.methods) {
+      return _.indexOf(collectionOptions.methods, method) >= 0;
+    }
+
+    return true;
+  }
+
+  self._getRequest = function() {
+
+    Fiber(function() {
 
       try {
         // TODO: A better way to do this?
-        var collection_result = collection_info[2] !== undefined
-            ? collection_info[1].find(collection_info[2])
-            : collection_info[1].find();
+        var collection_result = self._requestPath[2] !== undefined
+            ? self._requestCollection.find(self._requestPath[2])
+            : self._requestCollection.find();
 
         var records = [];
-        collection_result.forEach(function (record) {
+        collection_result.forEach(function(record) {
           records.push(record);
         });
 
         if (records.length === 0) {
-          return notFoundResponse('No Record(s) Found', req, res);
+          return self._notFoundResponse('No Record(s) Found');
         }
 
-        okResponse(JSON.stringify(records), req, res);
+        return self._okResponse(JSON.stringify(records));
 
       } catch (e) {
-        internalServerErrorResponse(e, req, res);
+        return self._internalServerErrorResponse(e);
       }
 
     }).run();
 
   }
 
-  function putRequest(collection_info, req, res) {
+  self._putRequest = function() {
 
-    if (! collection_info[2]) {
-      return notFoundResponse('Missing _id', req, res);
+    if (! self._requestPath[2]) {
+      return self._notFoundResponse('Missing _id');
     }
 
     var requestData = '';
 
-    req.on('data', function(chunk) {
+    self._request.on('data', function(chunk) {
       requestData += chunk.toString();
     });
 
-    req.on('end', function() {
+    self._request.on('end', function() {
       Fiber(function() {
         try {
-          collection_info[1].update(collection_info[2], JSON.parse(requestData));
+          self._requestCollection.update(self._requestPath[2], JSON.parse(requestData));
         } catch (e) {
-          return internalServerErrorResponse(e, req, res);
+          return self._internalServerErrorResponse(e);
         }
-        getRequest(collection_info, req, res);
+        return self._getRequest();
       }).run();
     });
 
   }
 
-  function deleteRequest(collection_info, req, res) {
-
-    if (! collection_info[2]) {
-      return notFoundResponse('Missing _id', req, res);
+  self._deleteRequest = function() {
+    if (! self._requestPath[2]) {
+      return self._notFoundResponse('Missing _id');
     }
 
     Fiber(function() {
       try {
-        collection_info[1].remove(collection_info[2]);
+        self._requestCollection.remove(self._requestPath[2]);
       } catch (e) {
-        return internalServerErrorResponse(e, req, res);
+        return self._internalServerErrorResponse(e);
       }
-      okResponse('', req, res);
+      return self._okResponse('');
     }).run();
-
   }
 
-  function postRequest(collection_info, req, res) {
-
+  self._postRequest = function() {
     var requestData = '';
 
-    req.on('data', function(chunk) {
+    self._request.on('data', function(chunk) {
       requestData += chunk.toString();
     });
 
-    req.on('end', function() {
+    self._request.on('end', function() {
       Fiber(function() {
         try {
-          collection_info[2] = collection_info[1].insert(JSON.parse(requestData));
+          self._requestPath[2] = self._requestCollection.insert(JSON.parse(requestData));
         } catch (e) {
-          return internalServerErrorResponse(e, req, res);
+          return self._internalServerErrorResponse(e);
         }
-        createdResponse(JSON.stringify({_id: collection_info[2]}), req, res);
+        return self._createdResponse(JSON.stringify({_id: self._requestPath[2]}));
       }).run();
     });
-
   }
 
-  function okResponse(body, req, res) {
-    response(200, body, req, res);
+  self._okResponse = function(body) {
+    self._sendResponse(200, body);
   }
 
-  function createdResponse(body, req, res) {
-    response(201, body, req, res);
+  self._createdResponse = function(body) {
+    self._sendResponse(201, body);
   }
 
-  function notSupportedResponse(req, res) {
-    response(501, '', req, res);
+  self._notSupportedResponse = function() {
+    self._sendResponse(501, '');
   }
 
-  function notFoundResponse(msg, req, res) {
-    response(404, JSON.stringify({message: msg.toString()}), req, res);
+  self._unauthorizedResponse = function(body) {
+    self._sendResponse(401, JSON.stringify({message: body.toString()}));
   }
 
-  function internalServerErrorResponse(err, req, res) {
-    response(500, JSON.stringify({error: err.toString()}), req, res);
+  self._notFoundResponse = function(body) {
+    self._sendResponse(404, JSON.stringify({message: body.toString()}));
   }
 
-  function response(statusCode, body, req, res) {
-    res.statusCode = statusCode;
-    res.setHeader("Content-Length", body.length);
-    res.setHeader("Content-Type", "application/json");
-    res.write(body);
-    res.end();
+  self._internalServerErrorResponse = function(body) {
+    self._sendResponse(500, JSON.stringify({error: body.toString()}));
   }
 
-  console.log('Collection API running at http://127.0.0.1:3005/');
+  self._sendResponse = function(statusCode, body) {
+    self._response.statusCode = statusCode;
+    self._response.setHeader('Content-Length', body.length);
+    self._response.setHeader('Content-Type', 'application/json');
+    self._response.write(body);
+    self._response.end();
+  }
 
-})();
+};
