@@ -22,7 +22,7 @@ if (Meteor.is_server) {
     // All values listed below are default
     collectionApi = new CollectionAPI({
       sslEnabled: false,                 // Disable/Enable SSL
-      listenPort: 3005,                  // Post to listen to
+      listenPort: 3005,                  // Port to listen to
       listenHost: undefined,             // Host to bind to (undefined binds to all hosts)
       authToken: undefined,              // Require this string to be passed in on each request
       privateKeyFile: 'privatekey.pem',  // SSL private key file (only used if SSL is enabled)
