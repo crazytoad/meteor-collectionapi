@@ -1,5 +1,5 @@
 Package.describe({
-  summary: "CRUD operations on Collections via HTTP API"
+  summary: "CRUD operations on Collections via HTTP/HTTPS API"
 });
 
 Package.on_use(function (api, where) {
