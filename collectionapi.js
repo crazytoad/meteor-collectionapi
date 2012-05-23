@@ -161,11 +161,11 @@ function CollectionAPI(options) {
 
     var requestData = '';
 
-    req.on('data', function(chunk) {
+    self._request.on('data', function(chunk) {
       requestData += chunk.toString();
     });
 
-    req.on('end', function() {
+    self._request.on('end', function() {
       Fiber(function() {
         try {
           self._requestCollection.update(self._requestPath[2], JSON.parse(requestData));
@@ -189,7 +189,7 @@ function CollectionAPI(options) {
       } catch (e) {
         return self._internalServerErrorResponse(e);
       }
-      okResponse('', req, res);
+      return self._okResponse('');
     }).run();
   }
 
