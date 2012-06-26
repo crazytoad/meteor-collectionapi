@@ -1,3 +1,13 @@
+## v0.11
+#### released on 2012-06-26
+
+* Added two configuration options, which changes the default behavior:
+
+  * `standAlone` - run the Collection API server as a separate HTTP(S) process. Previously, this was always the case by default. `standAlone` is now set to `false` by default so it now runs within the same web server object as Meteor. This allows the API to be accessed when deployed to Meteor.com servers. If you wish to have the old behavior, set `standAlone` to `true`.
+
+  * `apiPath` - access the Collection API using this prefix. Default is set to `collectionapi`, so you'd access the 'players' collection as '/collectionapi/players'. Required to be set when `standAlone` is set to `true`.
+
+
 ## v0.10
 #### released on 2012-06-12
 

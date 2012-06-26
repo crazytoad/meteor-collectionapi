@@ -1,7 +1,7 @@
 function CollectionAPI(options) {
   var self = this;
 
-  self.version = '0.10';
+  self.version = '0.11';
   self._url = __meteor_bootstrap__.require('url');
   self._querystring = __meteor_bootstrap__.require('querystring');
   self._collections = {};
