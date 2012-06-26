@@ -6,6 +6,8 @@ function CollectionAPI(options) {
   self._querystring = __meteor_bootstrap__.require('querystring');
   self._collections = {};
   self.options = {
+    apiPath: 'collectionapi',
+    standAlone: false,
     sslEnabled: false,
     listenPort: 3005,
     listenHost: undefined,
@@ -31,30 +33,43 @@ CollectionAPI.prototype.start = function() {
   var self = this;
   var httpServer, httpOptions, scheme;
 
-  if (self.options.sslEnabled === true) {
-    scheme = 'https://';
-    httpServer = __meteor_bootstrap__.require('https');
-    var fs = __meteor_bootstrap__.require('fs');
+  var startupMessage = 'Collection API v' + self.version;
 
-    httpOptions = {
-      key: fs.readFileSync(self.options.privateKeyFile),
-      cert: fs.readFileSync(self.options.certificateFile)
-    };
+  if (self.options.standAlone === true) {
+    if (self.options.sslEnabled === true) {
+      scheme = 'https://';
+      httpServer = __meteor_bootstrap__.require('https');
+      var fs = __meteor_bootstrap__.require('fs');
+
+      httpOptions = {
+        key: fs.readFileSync(self.options.privateKeyFile),
+        cert: fs.readFileSync(self.options.certificateFile)
+      };
+    } else {
+      scheme = 'http://';
+      httpServer = __meteor_bootstrap__.require('http');
+    }
+
+    self._httpServer = httpServer.createServer(httpOptions);
+    self._httpServer.addListener('request', function(request, response) { new CollectionAPI._requestListener(self, request, response); });
+    self._httpServer.listen(self.options.listenPort, self.options.listenHost);
+    console.log(startupMessage + ' running as a stand-alone server on ' +  scheme + (self.options.listenHost || 'localhost') + ':' + self.options.listenPort + '/' + (self.options.apiPath || ''));
   } else {
-    scheme = 'http://';
-    httpServer = __meteor_bootstrap__.require('http');
+    var route = "/" + this.options.apiPath;
+
+    // I really wish I could call .use(), but I need this to be at the
+    // beginning of the stack so it runs before Meteor's handler
+    __meteor_bootstrap__.app.stack.unshift({
+      route: route,
+      handle: function(request, response) { new CollectionAPI._requestListener(self, request, response); }
+    });
+    console.log(startupMessage + ' running at ' + route);
   }
-
-  self._httpServer = httpServer.createServer(httpOptions);
-  self._httpServer.addListener('request', function(request, response) { new CollectionAPI._requestListener(self, request, response); });
-  self._httpServer.listen(self.options.listenPort, self.options.listenHost);
-
-  console.log('Collection API v' + self.version + ' running on ' +  scheme + (self.options.listenHost || 'localhost') + ':' + self.options.listenPort);
 };
 
 CollectionAPI.prototype._collectionOptions = function(requestPath) {
   var self = this;
-  return self._collections[requestPath[1]] ? self._collections[requestPath[1]].options : undefined;
+  return self._collections[requestPath.collectionName] ? self._collections[requestPath.collectionName].options : undefined;
 };
 
 CollectionAPI._requestListener = function (server, request, response) {
@@ -69,11 +84,18 @@ CollectionAPI._requestListener = function (server, request, response) {
   // Check for the X-Auth-Token header or auth-token in the query string
   self._requestAuthToken = self._request.headers['x-auth-token'] ? self._request.headers['x-auth-token'] : self._server._querystring.parse(self._requestUrl.query)['auth-token'];
 
-  // [1] should be the collection path name
-  // [2] is the _id of that collection (optional)
-  self._requestPath = self._requestUrl.pathname.split('/');
+  if (self._server.options.standAlone === true && self._server.options.apiPath) {
+    var requestPath = self._requestUrl.pathname.split('/').slice(2,4);
+  } else {
+    var requestPath = self._requestUrl.pathname.split('/').slice(1,3);
+  }
 
-  self._requestCollection = self._server._collections[self._requestPath[1]] ? self._server._collections[self._requestPath[1]].collection : undefined;
+  self._requestPath = {
+    collectionPath: requestPath[0],
+    collectionId: requestPath[1]
+  };
+
+  self._requestCollection = self._server._collections[self._requestPath.collectionPath] ? self._server._collections[self._requestPath.collectionPath].collection : undefined;
 
   if (!self._authenticate()) {
     return self._unauthorizedResponse('Invalid/Missing Auth Token');
@@ -142,8 +164,8 @@ CollectionAPI._requestListener.prototype._getRequest = function() {
 
     try {
       // TODO: A better way to do this?
-      var collection_result = self._requestPath[2] !== undefined
-          ? self._requestCollection.find(self._requestPath[2])
+      var collection_result = self._requestPath.collectionId !== undefined
+          ? self._requestCollection.find(self._requestPath.collectionId)
           : self._requestCollection.find();
 
       var records = [];
@@ -168,7 +190,7 @@ CollectionAPI._requestListener.prototype._getRequest = function() {
 CollectionAPI._requestListener.prototype._putRequest = function() {
   var self = this;
 
-  if (! self._requestPath[2]) {
+  if (! self._requestPath.collectionId) {
     return self._notFoundResponse('Missing _id');
   }
 
@@ -181,7 +203,7 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
   self._request.on('end', function() {
     Fiber(function() {
       try {
-        self._requestCollection.update(self._requestPath[2], JSON.parse(requestData));
+        self._requestCollection.update(self._requestPath.collectionId, JSON.parse(requestData));
       } catch (e) {
         return self._internalServerErrorResponse(e);
       }
@@ -194,13 +216,13 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
 CollectionAPI._requestListener.prototype._deleteRequest = function() {
   var self = this;
 
-  if (! self._requestPath[2]) {
+  if (! self._requestPath.collectionId) {
     return self._notFoundResponse('Missing _id');
   }
 
   Fiber(function() {
     try {
-      self._requestCollection.remove(self._requestPath[2]);
+      self._requestCollection.remove(self._requestPath.collectionId);
     } catch (e) {
       return self._internalServerErrorResponse(e);
     }
@@ -219,11 +241,11 @@ CollectionAPI._requestListener.prototype._postRequest = function() {
   self._request.on('end', function() {
     Fiber(function() {
       try {
-        self._requestPath[2] = self._requestCollection.insert(JSON.parse(requestData));
+        self._requestPath.collectionId = self._requestCollection.insert(JSON.parse(requestData));
       } catch (e) {
         return self._internalServerErrorResponse(e);
       }
-      return self._createdResponse(JSON.stringify({_id: self._requestPath[2]}));
+      return self._createdResponse(JSON.stringify({_id: self._requestPath.collectionId}));
     }).run();
   });
 };
