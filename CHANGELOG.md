@@ -1,3 +1,9 @@
+## v0.12
+#### released on 2012-08-13
+
+* Fixed issue #2 - Rest method restrictions (Thanks, andreasgl)
+
+
 ## v0.11
 #### released on 2012-06-26
 
