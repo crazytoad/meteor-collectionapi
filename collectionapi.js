@@ -69,7 +69,7 @@ CollectionAPI.prototype.start = function() {
 
 CollectionAPI.prototype._collectionOptions = function(requestPath) {
   var self = this;
-  return self._collections[requestPath.collectionName] ? self._collections[requestPath.collectionName].options : undefined;
+  return self._collections[requestPath.collectionPath] ? self._collections[requestPath.collectionPath].options : undefined;
 };
 
 CollectionAPI._requestListener = function (server, request, response) {
