@@ -1,5 +1,5 @@
 ## v0.1.12
-#### released on 2012-11-13
+#### released on 2012-11-09
 
 * No code changes - changing version number format for Meteorite / Atmosphere
 
