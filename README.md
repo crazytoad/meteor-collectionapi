@@ -10,22 +10,31 @@ Current version: 0.12
 Installation
 -------
 
-Since this isn't an official Meteor smart package, you'll need to copy the collectionapi directory into the Meteor packages directory. Here's the easiest way:
+There are two ways to install this package.
+
+* ### With [Metorite](https://github.com/oortcloud/meteorite) [recommended]
+
+        $ mrt add collection-api
+
+    It's that easy! Be sure to check out other cool packages over at [Atmosphere](https://atmosphere.meteor.com/).
+
+* ### By Hand
+
+    Since this isn't an official Meteor smart package, you'll need to copy the collectionapi directory into the Meteor packages directory. Here's the easiest way:
 
 
-Go to the Meteor packages directory (`/usr/lib/meteor/packages/` on Linux)
+    Go to the Meteor packages directory (`/usr/lib/meteor/packages/` on Linux)
 
-    $ cd /usr/local/meteor/packages/
+        $ cd /usr/local/meteor/packages/
 
-Clone this neat repo:
+    Clone this neat repo:
 
-    $ git clone git://github.com/crazytoad/meteor-collectionapi.git collectionapi
+        $ git clone git://github.com/crazytoad/meteor-collectionapi.git collectionapi
 
-Go to your app directory and run:
+    Go to your app directory and run:
 
-    $ meteor add collectionapi
+        $ meteor add collectionapi
 
-That's it!
 
 Quick Usage
 -------
