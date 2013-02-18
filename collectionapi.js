@@ -205,7 +205,11 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
       try {
         self._requestCollection.update(self._requestPath.collectionId, JSON.parse(requestData));
       } catch (e) {
-        return self._internalServerErrorResponse(e);
+        try {
+          self._requestCollection.update(self._requestPath.collectionId, self._server._querystring.parse(requestData));
+        } catch (e) {
+          return self._internalServerErrorResponse(e);
+        }
       }
       return self._getRequest();
     }).run();
@@ -243,7 +247,11 @@ CollectionAPI._requestListener.prototype._postRequest = function() {
       try {
         self._requestPath.collectionId = self._requestCollection.insert(JSON.parse(requestData));
       } catch (e) {
-        return self._internalServerErrorResponse(e);
+        try {
+          self._requestPath.collectionId = self._requestCollection.insert(self._server._querystring.parse(requestData));
+        } catch (e) {
+          return self._internalServerErrorResponse(e);
+        }
       }
       return self._createdResponse(JSON.stringify({_id: self._requestPath.collectionId}));
     }).run();
