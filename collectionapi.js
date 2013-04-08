@@ -1,9 +1,9 @@
-function CollectionAPI(options) {
+CollectionAPI = function(options) {
   var self = this;
 
   self.version = '0.1.12';
-  self._url = __meteor_bootstrap__.require('url');
-  self._querystring = __meteor_bootstrap__.require('querystring');
+  self._url = Npm.require('url');
+  self._querystring = Npm.require('querystring');
   self._collections = {};
   self.options = {
     apiPath: 'collectionapi',
@@ -38,8 +38,8 @@ CollectionAPI.prototype.start = function() {
   if (self.options.standAlone === true) {
     if (self.options.sslEnabled === true) {
       scheme = 'https://';
-      httpServer = __meteor_bootstrap__.require('https');
-      var fs = __meteor_bootstrap__.require('fs');
+      httpServer = Npm.require('https');
+      var fs = Npm.require('fs');
 
       httpOptions = {
         key: fs.readFileSync(self.options.privateKeyFile),
@@ -47,7 +47,7 @@ CollectionAPI.prototype.start = function() {
       };
     } else {
       scheme = 'http://';
-      httpServer = __meteor_bootstrap__.require('http');
+      httpServer = Npm.require('http');
     }
 
     self._httpServer = httpServer.createServer(httpOptions);
