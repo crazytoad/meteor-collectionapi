@@ -1,3 +1,5 @@
+Fiber = Npm.require('fibers');
+
 CollectionAPI = function(options) {
   var self = this;
 
