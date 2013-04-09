@@ -1,3 +1,9 @@
+## v0.1.13 (Requires Meteor v0.6.0+)
+#### released on 2013-04-09
+
+* Updated to run under Meteor 0.6.0+ (Thanks, DracoLi)
+
+
 ## v0.1.12
 #### released on 2012-11-09
 

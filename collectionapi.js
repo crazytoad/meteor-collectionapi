@@ -1,9 +1,10 @@
-function CollectionAPI(options) {
+CollectionAPI = function(options) {
   var self = this;
 
-  self.version = '0.1.12';
-  self._url = __meteor_bootstrap__.require('url');
-  self._querystring = __meteor_bootstrap__.require('querystring');
+  self.version = '0.1.13';
+  self._url = Npm.require('url');
+  self._querystring = Npm.require('querystring');
+  self._fiber = Npm.require('fibers');
   self._collections = {};
   self.options = {
     apiPath: 'collectionapi',
@@ -38,8 +39,8 @@ CollectionAPI.prototype.start = function() {
   if (self.options.standAlone === true) {
     if (self.options.sslEnabled === true) {
       scheme = 'https://';
-      httpServer = __meteor_bootstrap__.require('https');
-      var fs = __meteor_bootstrap__.require('fs');
+      httpServer = Npm.require('https');
+      var fs = Npm.require('fs');
 
       httpOptions = {
         key: fs.readFileSync(self.options.privateKeyFile),
@@ -47,7 +48,7 @@ CollectionAPI.prototype.start = function() {
       };
     } else {
       scheme = 'http://';
-      httpServer = __meteor_bootstrap__.require('http');
+      httpServer = Npm.require('http');
     }
 
     self._httpServer = httpServer.createServer(httpOptions);
@@ -84,10 +85,11 @@ CollectionAPI._requestListener = function (server, request, response) {
   // Check for the X-Auth-Token header or auth-token in the query string
   self._requestAuthToken = self._request.headers['x-auth-token'] ? self._request.headers['x-auth-token'] : self._server._querystring.parse(self._requestUrl.query)['auth-token'];
 
+  var requestPath;
   if (self._server.options.standAlone === true && self._server.options.apiPath) {
-    var requestPath = self._requestUrl.pathname.split('/').slice(2,4);
+    requestPath = self._requestUrl.pathname.split('/').slice(2,4);
   } else {
-    var requestPath = self._requestUrl.pathname.split('/').slice(1,3);
+    requestPath = self._requestUrl.pathname.split('/').slice(1,3);
   }
 
   self._requestPath = {
@@ -160,13 +162,11 @@ CollectionAPI._requestListener.prototype._requestMethodAllowed = function (metho
 CollectionAPI._requestListener.prototype._getRequest = function() {
   var self = this;
 
-  Fiber(function() {
+  self._server._fiber(function() {
 
     try {
       // TODO: A better way to do this?
-      var collection_result = self._requestPath.collectionId !== undefined
-          ? self._requestCollection.find(self._requestPath.collectionId)
-          : self._requestCollection.find();
+      var collection_result = self._requestPath.collectionId !== undefined ? self._requestCollection.find(self._requestPath.collectionId) : self._requestCollection.find();
 
       var records = [];
       collection_result.forEach(function(record) {
@@ -201,7 +201,7 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
   });
 
   self._request.on('end', function() {
-    Fiber(function() {
+    self._server._fiber(function() {
       try {
         self._requestCollection.update(self._requestPath.collectionId, JSON.parse(requestData));
       } catch (e) {
@@ -220,7 +220,7 @@ CollectionAPI._requestListener.prototype._deleteRequest = function() {
     return self._notFoundResponse('Missing _id');
   }
 
-  Fiber(function() {
+  self._server._fiber(function() {
     try {
       self._requestCollection.remove(self._requestPath.collectionId);
     } catch (e) {
@@ -228,7 +228,7 @@ CollectionAPI._requestListener.prototype._deleteRequest = function() {
     }
     return self._okResponse('');
   }).run();
-}
+};
 
 CollectionAPI._requestListener.prototype._postRequest = function() {
   var self = this;
@@ -239,7 +239,7 @@ CollectionAPI._requestListener.prototype._postRequest = function() {
   });
 
   self._request.on('end', function() {
-    Fiber(function() {
+    self._server._fiber(function() {
       try {
         self._requestPath.collectionId = self._requestCollection.insert(JSON.parse(requestData));
       } catch (e) {

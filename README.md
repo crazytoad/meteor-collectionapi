@@ -4,7 +4,7 @@ Collection API
 Easily perform [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operations on Meteor Collections over HTTP/HTTPS from outside of the Meteor client or server environment.
 
 
-Current version: 0.1.12
+Current version: 0.1.13  ***(Requires Meteor v0.6.0+)***
 
 
 Installation
@@ -20,20 +20,13 @@ There are two ways to install this package.
 
 * ### By Hand
 
-    Since this isn't an official Meteor smart package, you'll need to copy the collectionapi directory into the Meteor packages directory. Here's the easiest way:
+    Since this isn't an official Meteor smart package, you'll need to clone this package into the `packages` directory inside your project.
 
+        $ meteor create myproject
 
-    Go to the Meteor packages directory (`/usr/lib/meteor/packages/` on Linux)
+        $ cd myproject
 
-        $ cd /usr/local/meteor/packages/
-
-    Clone this neat repo:
-
-        $ git clone git://github.com/crazytoad/meteor-collectionapi.git collectionapi
-
-    Go to your app directory and run:
-
-        $ meteor add collectionapi
+        $ git clone git://github.com/crazytoad/meteor-collectionapi.git packages/collectionapi
 
 
 Quick Usage
@@ -42,7 +35,7 @@ Quick Usage
 ```javascript
 Players = new Meteor.Collection("players");
 
-if (Meteor.is_server) {
+if (Meteor.isServer) {
   Meteor.startup(function () {
 
     // All values listed below are default
@@ -81,7 +74,7 @@ If you specify an `authToken` it must be passed in either the `X-Auth-Token` req
 ```javascript
 Players = new Meteor.Collection("players");
 
-if (Meteor.is_server) {
+if (Meteor.isServer) {
   Meteor.startup(function () {
     collectionApi = new CollectionAPI({ authToken: '97f0ad9e24ca5e0408a269748d7fe0a0' });
     collectionApi.addCollection(Players, 'players');
