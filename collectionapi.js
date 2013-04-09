@@ -281,10 +281,10 @@ CollectionAPI._requestListener.prototype._internalServerErrorResponse = function
 };
 
 CollectionAPI._requestListener.prototype._sendResponse = function(statusCode, body) {
-    var self = this;
-    self._response.statusCode = statusCode;
-    self._response.setHeader('Content-Length', body.length);
-    self._response.setHeader('Content-Type', 'application/json');
-    self._response.write(body);
-    self._response.end();
-  };
+  var self = this;
+  self._response.statusCode = statusCode;
+  self._response.setHeader('Content-Length', body.length);
+  self._response.setHeader('Content-Type', 'application/json');
+  self._response.write(body);
+  self._response.end();
+};
