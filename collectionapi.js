@@ -170,7 +170,7 @@ CollectionAPI._requestListener.prototype._beforeHandling = function (method) {
   return true;
 }
 
-CollectionAPI._requestListener.prototype._getRequest = function() {
+CollectionAPI._requestListener.prototype._getRequest = function(fromPutRequest) {
   var self = this;
 
   self._server._fiber(function() {
@@ -185,6 +185,9 @@ CollectionAPI._requestListener.prototype._getRequest = function() {
       });
       
       if(!self._beforeHandling('GET',  self._requestPath.collectionId, records)) {
+        if (fromPutRequest) {
+          return records.length ? self._noContentResponse() : self._notFoundResponse('No Record(s) Found');
+        }
         return self._rejectedResponse("Could not get that collection/object.");
       }
       
@@ -229,7 +232,7 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
       } catch (e) {
         return self._internalServerErrorResponse(e);
       }
-      return self._getRequest();
+      return self._getRequest('fromPutRequest');
     }).run();
   });
 
@@ -288,6 +291,11 @@ CollectionAPI._requestListener.prototype._okResponse = function(body) {
 CollectionAPI._requestListener.prototype._createdResponse = function(body) {
   var self = this;
   self._sendResponse(201, body);
+};
+
+CollectionAPI._requestListener.prototype._noContentResponse = function() {
+  var self = this;
+  self._sendResponse(204, '');
 };
 
 CollectionAPI._requestListener.prototype._notSupportedResponse = function() {
