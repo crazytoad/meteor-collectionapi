@@ -1,3 +1,11 @@
+## v0.1.14 (Requires Meteor v0.6.0+)
+#### released on 2013-05-28
+
+* Calculate the correct content length in utf8 responses (pull request #14 - Thanks, Szczyp)
+
+* Added a callback that is called right before the collection is modified/queried. (pull request #3 - Thanks, andreasgl)
+
+
 ## v0.1.13 (Requires Meteor v0.6.0+)
 #### released on 2013-04-09
 
