@@ -3,6 +3,6 @@
   "description": "Perform CRUD operations on Collections over a RESTful API",
   "homepage": "https://github.com/crazytoad/meteor-collectionapi",
   "author": "Todd Colton",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "git": "https://github.com/crazytoad/meteor-collectionapi.git"
 }

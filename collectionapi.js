@@ -1,7 +1,7 @@
 CollectionAPI = function(options) {
   var self = this;
 
-  self.version = '0.1.14';
+  self.version = '0.1.15';
   self._url = Npm.require('url');
   self._querystring = Npm.require('querystring');
   self._fiber = Npm.require('fibers');

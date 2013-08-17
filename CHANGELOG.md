@@ -1,3 +1,9 @@
+## v0.1.15 (Requires Meteor v0.6.5+)
+#### released on 2013-08-17
+
+* Fixed issue #23 - Now compatible with the new package requirements in Meteor v0.6.5
+
+
 ## v0.1.14 (Requires Meteor v0.6.0+)
 #### released on 2013-05-28
 
