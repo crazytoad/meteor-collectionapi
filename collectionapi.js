@@ -56,15 +56,20 @@ CollectionAPI.prototype.start = function() {
     self._httpServer.listen(self.options.listenPort, self.options.listenHost);
     console.log(startupMessage + ' running as a stand-alone server on ' +  scheme + (self.options.listenHost || 'localhost') + ':' + self.options.listenPort + '/' + (self.options.apiPath || ''));
   } else {
-    var route = "/" + this.options.apiPath;
 
-    // I really wish I could call .use(), but I need this to be at the
-    // beginning of the stack so it runs before Meteor's handler
-    __meteor_bootstrap__.app.stack.unshift({
-      route: route,
-      handle: function(request, response) { new CollectionAPI._requestListener(self, request, response); }
+    RoutePolicy.declare('/' + this.options.apiPath + '/', 'network');
+
+    WebApp.connectHandlers.use(function(req, res, next) {
+      if (req.url.split('/')[1] !== self.options.apiPath) {
+        next();
+        return;
+      }
+      self._fiber(function () {
+        new CollectionAPI._requestListener(self, req, res);
+      }).run();
     });
-    console.log(startupMessage + ' running at ' + route);
+
+    console.log(startupMessage + ' running at /' + this.options.apiPath);
   }
 };
 
@@ -85,12 +90,7 @@ CollectionAPI._requestListener = function (server, request, response) {
   // Check for the X-Auth-Token header or auth-token in the query string
   self._requestAuthToken = self._request.headers['x-auth-token'] ? self._request.headers['x-auth-token'] : self._server._querystring.parse(self._requestUrl.query)['auth-token'];
 
-  var requestPath;
-  if (self._server.options.standAlone === true && self._server.options.apiPath) {
-    requestPath = self._requestUrl.pathname.split('/').slice(2,4);
-  } else {
-    requestPath = self._requestUrl.pathname.split('/').slice(1,3);
-  }
+  var requestPath = self._requestUrl.pathname.split('/').slice(2,4);
 
   self._requestPath = {
     collectionPath: requestPath[0],
