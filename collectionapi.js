@@ -90,7 +90,12 @@ CollectionAPI._requestListener = function (server, request, response) {
   // Check for the X-Auth-Token header or auth-token in the query string
   self._requestAuthToken = self._request.headers['x-auth-token'] ? self._request.headers['x-auth-token'] : self._server._querystring.parse(self._requestUrl.query)['auth-token'];
 
-  var requestPath = self._requestUrl.pathname.split('/').slice(2,4);
+  var requestPath;
+  if (self._server.options.standAlone === true && ! self._server.options.apiPath) {
+    requestPath = self._requestUrl.pathname.split('/').slice(1,3);
+  } else {
+    requestPath = self._requestUrl.pathname.split('/').slice(2,4);
+  }
 
   self._requestPath = {
     collectionPath: requestPath[0],
