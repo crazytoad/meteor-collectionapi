@@ -91,7 +91,7 @@ Create a record:
 
 Update a record:
 
-    $ curl -H "X-Auth-Token: 97f0ad9e24ca5e0408a269748d7fe0a0" -X PUT -d "{\"$set\":{\"gender\":\"male\"}}" http://localhost:3000/collectionapi/players/c4acddd1-a504-4212-9534-adca17af4885
+    $ curl -H "X-Auth-Token: 97f0ad9e24ca5e0408a269748d7fe0a0" -X PUT -d "{\"\$set\":{\"gender\":\"male\"}}" http://localhost:3000/collectionapi/players/c4acddd1-a504-4212-9534-adca17af4885
 
 Delete a record:
 
