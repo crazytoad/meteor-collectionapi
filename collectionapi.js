@@ -235,7 +235,11 @@ CollectionAPI._requestListener.prototype._putRequest = function() {
         }
         self._requestCollection.update(self._requestPath.collectionId, obj);
       } catch (e) {
-        return self._internalServerErrorResponse(e);
+        try {
+          self._requestCollection.update(self._requestPath.collectionId, self._server._querystring.parse(requestData));
+        } catch (e) {
+          return self._internalServerErrorResponse(e);
+        }
       }
       return self._getRequest('fromPutRequest');
     }).run();
@@ -281,7 +285,11 @@ CollectionAPI._requestListener.prototype._postRequest = function() {
         }
         self._requestPath.collectionId = self._requestCollection.insert(obj);
       } catch (e) {
-        return self._internalServerErrorResponse(e);
+        try {
+          self._requestPath.collectionId = self._requestCollection.insert(self._server._querystring.parse(requestData));
+        } catch (e) {
+          return self._internalServerErrorResponse(e);
+        }
       }
       return self._createdResponse(JSON.stringify({_id: self._requestPath.collectionId}));
     }).run();
