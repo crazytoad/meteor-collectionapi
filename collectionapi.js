@@ -332,7 +332,7 @@ CollectionAPI._requestListener.prototype._sendResponse = function(statusCode, bo
   var self = this;
   self._response.statusCode = statusCode;
   self._response.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'));
-  self._response.setHeader('Content-Type', 'application/json');
+  self._response.setHeader('Content-Type', 'application/json; charset=utf-8');
   self._response.write(body);
   self._response.end();
 };
