@@ -1,3 +1,7 @@
+# NOTE: This repo is no longer maintained.
+# If you run into any issues or want the latest version, please visit https://github.com/xcv58/meteor-collectionapi
+
+
 Collection API
 ========
 
